@@ -1,0 +1,64 @@
+# Databricks Asset Bundle: Subaru Repair Order (RO) Document Extraction
+#
+# A Lakeflow Spark Declarative Pipeline that ingests scanned/PDF repair orders,
+# parses them with ai_parse_document, extracts structured fields with ai_extract,
+# and publishes a clean bronze -> silver -> gold medallion model.
+#
+# Quick start:
+#   1. databricks auth login --host https://<your-workspace>.cloud.databricks.com
+#   2. Edit the `variables` defaults below (catalog, schema, source_volume_path).
+#   3. bash setup/create_volume_and_upload.sh     # creates the volume + uploads sample PDFs
+#   4. databricks bundle deploy -t dev
+#   5. databricks bundle run subaru_ro_extraction -t dev
+#
+# Docs: https://docs.databricks.com/dev-tools/bundles/index.html
+
+bundle:
+  name: subaru-ro-extraction
+
+variables:
+  catalog:
+    description: Unity Catalog catalog where pipeline tables are published.
+    default: main
+  schema:
+    description: Schema (database) within the catalog for pipeline tables.
+    default: subaru_ro
+  source_volume_path:
+    description: >-
+      UC Volume folder containing the source RO PDFs. Auto Loader reads every
+      file in this folder. Must match where setup/create_volume_and_upload.sh
+      uploaded the samples.
+    default: /Volumes/main/subaru_ro/ro_documents/source_files
+
+resources:
+  pipelines:
+    subaru_ro_extraction:
+      name: "Subaru RO Document Extraction (${bundle.target})"
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      photon: true
+      channel: CURRENT
+      continuous: false
+      development: true
+      libraries:
+        - glob:
+            include: src/**
+      configuration:
+        source_volume_path: ${var.source_volume_path}
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://your-workspace.cloud.databricks.com
+
+  prod:
+    mode: production
+    workspace:
+      host: https://your-workspace.cloud.databricks.com
+    resources:
+      pipelines:
+        subaru_ro_extraction:
+          development: false

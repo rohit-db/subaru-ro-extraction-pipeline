@@ -1,0 +1,19 @@
+# Databricks bundle artifacts
+.databricks/
+*.tfstate
+*.tfstate.backup
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Never commit source documents (may contain customer data)
+sample_data/*.pdf
+
